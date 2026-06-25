@@ -11,7 +11,11 @@ import {
   VolumeX,
   HelpCircle,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Gift,
+  RefreshCw,
+  Sparkle,
+  Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
@@ -156,6 +160,195 @@ export default function PlayView() {
         });
       }
     }, 100);
+  };
+
+  // --- 3. SCRATCH CARD STATE & LOGIC ---
+  const [scratchUnlocked, setScratchUnlocked] = useState(false);
+  const [scratchFinished, setScratchFinished] = useState(false);
+  const [scratchPrize, setScratchPrize] = useState<{ text: string; val: number | string; type: string } | null>(null);
+  const scratchCanvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const isScratching = React.useRef(false);
+  const scratchMoves = React.useRef(0);
+
+  const scratchPrizes = [
+    { text: "15 SuperCoins", val: 15, type: "coins" },
+    { text: "30 SuperCoins", val: 30, type: "coins" },
+    { text: "100 SuperCoins", val: 100, type: "coins" },
+    { text: "Flat 20% Voucher", val: "MEMBER20", type: "voucher" },
+    { text: "Better Luck! 🍀", val: 0, type: "miss" }
+  ];
+
+  const handleBuyScratchCard = () => {
+    if (!user) {
+      toast.error("Please login to buy a scratch card!");
+      return;
+    }
+    if (user.superCoins < 5) {
+      toast.error("It costs 5 SuperCoins to buy a Golden Scratch Card!");
+      return;
+    }
+
+    deductSuperCoins(5);
+    setScratchUnlocked(true);
+    setScratchFinished(false);
+    scratchMoves.current = 0;
+
+    // Pick a random prize
+    const randomPrize = scratchPrizes[Math.floor(Math.random() * scratchPrizes.length)];
+    setScratchPrize(randomPrize);
+    toast.success("Golden Scratch Card purchased! Scratch to reveal! 🪙");
+  };
+
+  const initScratchCanvas = () => {
+    const canvas = scratchCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Clear and paint silver coating
+    ctx.globalCompositeOperation = 'source-over';
+    const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    grad.addColorStop(0, '#c0c0c0'); // silver
+    grad.addColorStop(0.5, '#e2e8f0'); // slate-200
+    grad.addColorStop(1, '#a1a1aa'); // zinc-400
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Decorative texture lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.lineWidth = 1.5;
+    for (let i = -canvas.width; i < canvas.width; i += 20) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i + canvas.height, canvas.height);
+      ctx.stroke();
+    }
+
+    // Add instructions text
+    ctx.fillStyle = '#1e293b'; // slate-800
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('SCRATCH WITH CURSOR 🪙', canvas.width / 2, canvas.height / 2 - 10);
+    ctx.font = 'bold 10px sans-serif';
+    ctx.fillStyle = '#475569'; // slate-600
+    ctx.fillText('(or tap & swipe on mobile)', canvas.width / 2, canvas.height / 2 + 15);
+  };
+
+  useEffect(() => {
+    if (scratchUnlocked && !scratchFinished) {
+      // Paint canvas with small delay
+      setTimeout(initScratchCanvas, 150);
+    }
+  }, [scratchUnlocked, scratchFinished]);
+
+  const handleScratchStart = () => {
+    isScratching.current = true;
+  };
+
+  const handleScratchMoveEvent = (clientX: number, clientY: number) => {
+    if (!isScratching.current || !scratchUnlocked || scratchFinished) return;
+    const canvas = scratchCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(x, y, 18, 0, Math.PI * 2);
+    ctx.fill();
+
+    scratchMoves.current += 1;
+    if (scratchMoves.current > 40) {
+      finishScratching();
+    }
+  };
+
+  const handleScratchEnd = () => {
+    isScratching.current = false;
+  };
+
+  const finishScratching = () => {
+    if (scratchFinished || !scratchPrize) return;
+    setScratchFinished(true);
+    
+    // Apply reward
+    if (scratchPrize.type === "coins" && typeof scratchPrize.val === "number") {
+      if (scratchPrize.val > 0) {
+        addSuperCoins(scratchPrize.val);
+        toast.success(`You scratched & won ${scratchPrize.val} SuperCoins! 🪙`, { icon: '🌟' });
+      } else {
+        toast.error("Better luck next time! Try again for a lucky scratch! 🍀");
+      }
+    } else if (scratchPrize.type === "voucher" && typeof scratchPrize.val === "string") {
+      const unlocked = localStorage.getItem('gocart_unlocked_vouchers');
+      const list = unlocked ? JSON.parse(unlocked) : [];
+      if (!list.includes(scratchPrize.val)) {
+        list.push(scratchPrize.val);
+        localStorage.setItem('gocart_unlocked_vouchers', JSON.stringify(list));
+      }
+      toast.success(`You scratched & won a ${scratchPrize.text}! 🎫`, { icon: '🎁' });
+    }
+  };
+
+  // --- 4. LUCKY FLIP CARDS STATE & LOGIC ---
+  const [flipGameActive, setFlipGameActive] = useState(false);
+  const [flippedCardIdx, setFlippedCardIdx] = useState<number | null>(null);
+  const [cardPrizes, setCardPrizes] = useState<any[]>([]);
+
+  const defaultCardPrizes = [
+    { text: "50 Coins", val: 50, type: "coins", icon: "🪙" },
+    { text: "10% Coupon", val: "GOCART10", type: "voucher", icon: "🎫" },
+    { text: "Better Luck", val: 0, type: "miss", icon: "🍀" },
+    { text: "20 Coins", val: 20, type: "coins", icon: "🪙" },
+    { text: "50% Coupon", val: "SUPER50", type: "voucher", icon: "🎁" }
+  ];
+
+  const handleStartFlipGame = () => {
+    if (!user) {
+      toast.error("Please login to play Lucky Cards!");
+      return;
+    }
+    if (user.superCoins < 8) {
+      toast.error("It costs 8 SuperCoins to play Lucky Flip Cards!");
+      return;
+    }
+
+    deductSuperCoins(8);
+    setFlippedCardIdx(null);
+    setFlipGameActive(true);
+
+    // Pick 3 random, shuffled prizes from defaultCardPrizes
+    const shuffled = [...defaultCardPrizes].sort(() => 0.5 - Math.random()).slice(0, 3);
+    setCardPrizes(shuffled);
+    toast.success("Golden cards dealt! Pick one card to flip over! 🃏");
+  };
+
+  const handleFlipCard = (index: number) => {
+    if (flippedCardIdx !== null || !flipGameActive) return;
+    setFlippedCardIdx(index);
+
+    const chosenPrize = cardPrizes[index];
+    if (chosenPrize.type === "coins" && typeof chosenPrize.val === "number") {
+      if (chosenPrize.val > 0) {
+        addSuperCoins(chosenPrize.val);
+        toast.success(`Superb! You flipped and won ${chosenPrize.text}! 🪙`, { icon: '⚡' });
+      } else {
+        toast.error("Better luck next time! Try another card flip.");
+      }
+    } else if (chosenPrize.type === "voucher" && typeof chosenPrize.val === "string") {
+      const unlocked = localStorage.getItem('gocart_unlocked_vouchers');
+      const list = unlocked ? JSON.parse(unlocked) : [];
+      if (!list.includes(chosenPrize.val)) {
+        list.push(chosenPrize.val);
+        localStorage.setItem('gocart_unlocked_vouchers', JSON.stringify(list));
+      }
+      toast.success(`Jackpot! You flipped and won a ${chosenPrize.text}! 🎫`, { icon: '🎁' });
+    }
   };
 
   return (
@@ -347,6 +540,201 @@ export default function PlayView() {
             >
               {isRolling ? "ROLLING SLOTS... ⚡" : "ROLL FOR 10 COINS 🎰"}
             </button>
+          </div>
+        </section>
+
+        {/* --- GAME 3: GOLDEN SCRATCH CARD --- */}
+        <section className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-3xl p-6 shadow-md flex flex-col items-center justify-between space-y-6 text-center relative overflow-hidden">
+          <div className="w-full flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
+            <div className="flex items-center gap-2 text-left">
+              <Gift className="h-5 w-5 text-amber-500" />
+              <div>
+                <h3 className="text-xs font-black uppercase text-zinc-800 dark:text-zinc-100 tracking-tight">Golden Scratch Card</h3>
+                <p className="text-[10px] text-zinc-400 font-bold uppercase">5 SuperCoins / Card</p>
+              </div>
+            </div>
+            <span className="text-[9px] font-black text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-900/20 uppercase tracking-widest flex items-center gap-1">
+              ✨ GUARANTEED WIN
+            </span>
+          </div>
+
+          {/* Scratch Card container */}
+          <div className="relative w-64 h-40 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center justify-center overflow-hidden my-2 shadow-inner">
+            {scratchUnlocked ? (
+              <>
+                {/* Prize text shown underneath */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-yellow-50/20 dark:bg-yellow-950/10">
+                  <Sparkle className="h-8 w-8 text-yellow-400 animate-spin-slow mb-2" />
+                  <p className="text-[10px] text-zinc-400 font-black uppercase tracking-wider">Your Scratch Reward</p>
+                  <p className="text-xl font-black text-zinc-900 dark:text-white mt-1">
+                    {scratchPrize?.text}
+                  </p>
+                  {scratchFinished && (
+                    <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded mt-2 uppercase">Claimed ✓</span>
+                  )}
+                </div>
+
+                {/* Scratch Coating Canvas */}
+                {!scratchFinished && (
+                  <canvas
+                    ref={scratchCanvasRef}
+                    width={256}
+                    height={160}
+                    onMouseDown={handleScratchStart}
+                    onMouseMove={(e) => handleScratchMoveEvent(e.clientX, e.clientY)}
+                    onMouseUp={handleScratchEnd}
+                    onMouseLeave={handleScratchEnd}
+                    onTouchStart={handleScratchStart}
+                    onTouchMove={(e) => {
+                      if (e.touches[0]) {
+                        handleScratchMoveEvent(e.touches[0].clientX, e.touches[0].clientY);
+                      }
+                    }}
+                    onTouchEnd={handleScratchEnd}
+                    className="absolute inset-0 cursor-crosshair touch-none rounded-2xl"
+                  />
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center p-6 space-y-3">
+                <div className="h-12 w-12 rounded-full bg-yellow-100 dark:bg-yellow-950/40 flex items-center justify-center text-yellow-600 dark:text-yellow-400">
+                  <Gift className="h-6 w-6" />
+                </div>
+                <p className="text-xs font-black uppercase text-zinc-800 dark:text-zinc-200 tracking-tight">Purchase Card</p>
+                <p className="text-[10px] text-zinc-400 max-w-[180px] leading-tight">Unlock a scratch card to win coins or 20% discount coupon!</p>
+              </div>
+            )}
+          </div>
+
+          {/* Controls */}
+          <div className="w-full space-y-2">
+            {!scratchUnlocked ? (
+              <button
+                onClick={handleBuyScratchCard}
+                className="w-full py-3 px-6 rounded-2xl text-xs font-black uppercase tracking-wider bg-gradient-to-r from-yellow-500 to-amber-600 hover:scale-103 active:scale-97 text-white cursor-pointer shadow-lg transition-all"
+              >
+                UNLOCK CARD FOR 5 COINS 🪙
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                {!scratchFinished && (
+                  <button
+                    onClick={finishScratching}
+                    className="flex-1 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 cursor-pointer transition-all"
+                  >
+                    Quick Reveal
+                  </button>
+                )}
+                <button
+                  onClick={() => setScratchUnlocked(false)}
+                  disabled={!scratchFinished}
+                  className={`flex-grow py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
+                    scratchFinished 
+                      ? 'bg-amber-500 hover:bg-amber-600 text-white cursor-pointer' 
+                      : 'bg-zinc-100 dark:bg-zinc-850 text-zinc-400 cursor-not-allowed'
+                  }`}
+                >
+                  Scratch Another
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* --- GAME 4: LUCKY FLIP CARDS --- */}
+        <section className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-3xl p-6 shadow-md flex flex-col items-center justify-between space-y-6 text-center relative overflow-hidden">
+          <div className="w-full flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
+            <div className="flex items-center gap-2 text-left">
+              <RefreshCw className="h-5 w-5 text-rose-500" />
+              <div>
+                <h3 className="text-xs font-black uppercase text-zinc-800 dark:text-zinc-100 tracking-tight">Lucky Card Flip</h3>
+                <p className="text-[10px] text-zinc-400 font-bold uppercase">8 SuperCoins / Play</p>
+              </div>
+            </div>
+            <span className="text-[9px] font-black text-rose-500 bg-rose-50 dark:bg-rose-950/20 px-2 py-0.5 rounded-full border border-rose-100 dark:border-rose-900/20 uppercase tracking-widest flex items-center gap-1">
+              🃏 CHOOSE & FLIP
+            </span>
+          </div>
+
+          {/* Cards Area */}
+          <div className="w-full flex justify-center gap-3 my-2 h-40 items-center">
+            {flipGameActive && cardPrizes.length === 3 ? (
+              cardPrizes.map((prize, idx) => {
+                const isFlipped = flippedCardIdx !== null;
+                const isUserChoice = flippedCardIdx === idx;
+                
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => handleFlipCard(idx)}
+                    className="relative w-20 h-28 cursor-pointer group"
+                    style={{ perspective: '1000px' }}
+                  >
+                    <div
+                      className="relative w-full h-full duration-500 rounded-xl shadow-md border transition-transform"
+                      style={{
+                        transform: isFlipped ? 'rotateY(180deg)' : 'none',
+                        transformStyle: 'preserve-3d',
+                        borderColor: isUserChoice ? '#2874F0' : 'rgba(120, 120, 120, 0.15)'
+                      }}
+                    >
+                      {/* CARD FRONT (Face down) */}
+                      <div
+                        className="absolute inset-0 rounded-xl bg-gradient-to-b from-amber-500 to-yellow-600 border border-yellow-400 flex flex-col items-center justify-center p-2 text-white"
+                        style={{ backfaceVisibility: 'hidden', zIndex: 2 }}
+                      >
+                        <span className="text-lg font-black font-mono">?</span>
+                        <span className="text-[7px] font-extrabold uppercase mt-1 text-yellow-100 tracking-wider">Lucky Flip</span>
+                      </div>
+
+                      {/* CARD BACK (Face up) */}
+                      <div
+                        className="absolute inset-0 rounded-xl bg-white dark:bg-zinc-950 flex flex-col items-center justify-center p-2 text-center border-2 border-zinc-200 dark:border-zinc-800"
+                        style={{
+                          backfaceVisibility: 'hidden',
+                          transform: 'rotateY(180deg)',
+                          zIndex: 1
+                        }}
+                      >
+                        <span className="text-2xl">{prize.icon}</span>
+                        <h4 className="text-[9px] font-black uppercase text-zinc-900 dark:text-zinc-100 mt-1 leading-none truncate w-full">
+                          {prize.text}
+                        </h4>
+                        {isUserChoice && (
+                          <span className="text-[6px] font-black uppercase text-blue-600 bg-blue-50 dark:bg-blue-950/20 px-1 py-0.5 rounded mt-1.5 border border-blue-100 dark:border-blue-900/30">
+                            Won
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="flex flex-col items-center justify-center p-6 space-y-3">
+                <div className="h-12 w-12 rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center text-rose-600 dark:text-rose-400">
+                  <Sparkle className="h-6 w-6 text-rose-500" />
+                </div>
+                <p className="text-xs font-black uppercase text-zinc-800 dark:text-zinc-200 tracking-tight font-sans">Flip to win 50 Coins</p>
+                <p className="text-[10px] text-zinc-400 max-w-[190px] leading-tight">Deal 3 golden mystery cards. Click to reveal jackpot coins!</p>
+              </div>
+            )}
+          </div>
+
+          {/* Controls */}
+          <div className="w-full space-y-2">
+            {(!flipGameActive || flippedCardIdx !== null) ? (
+              <button
+                onClick={handleStartFlipGame}
+                className="w-full py-3 px-6 rounded-2xl text-xs font-black uppercase tracking-wider bg-rose-600 hover:bg-rose-700 text-white cursor-pointer shadow-lg transition-all"
+              >
+                {flippedCardIdx !== null ? "DEAL & PLAY AGAIN" : "DEAL CARDS FOR 8 COINS 🃏"}
+              </button>
+            ) : (
+              <p className="text-xs text-[#2874F0] dark:text-[#5094ff] font-extrabold uppercase tracking-widest animate-pulse py-3">
+                👆 Choose 1 of the 3 cards above!
+              </p>
+            )}
           </div>
         </section>
 
