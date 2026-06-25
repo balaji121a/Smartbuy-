@@ -28,16 +28,24 @@ import {
   AlertTriangle,
   Smartphone,
   Save,
-  Check
+  Check,
+  Truck,
+  Clock,
+  Calendar,
+  ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
+import { INDIAN_PRODUCTS } from '../data/products';
 
 export default function ProfileView() {
   const { user, logout, navigate, updateUser } = useApp();
 
   // Active sub-modal / view state
   const [activeModal, setActiveModal] = useState<'profile' | 'addresses' | 'cards' | 'notifications' | null>(null);
+
+  // Selected order to track
+  const [trackingOrder, setTrackingOrder] = useState<any | null>(null);
 
   // Form states for Profile Editing
   const [formName, setFormName] = useState('');
@@ -232,6 +240,90 @@ export default function ProfileView() {
     toast.success("Preferences updated", { duration: 1000 });
   };
 
+  const mockPastOrders = [
+    {
+      id: "OD2026102591",
+      date: "June 20, 2026",
+      status: "Delivered",
+      trackingStep: 4, // Delivered
+      paymentMethod: "UPI (Google Pay)",
+      address: {
+        name: user?.name || "Customer",
+        address: user?.address || "12, Anna Salai, Mount Road",
+        city: user?.city || "Chennai",
+        state: user?.state || "Tamil Nadu",
+        pincode: user?.pincode || "600001"
+      },
+      items: [
+        {
+          product: INDIAN_PRODUCTS[0] || {
+            name: "Apple iPhone 15 Pro Max (256 GB) - Blue Titanium",
+            price: 139900,
+            images: ["https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&q=80"],
+            category: "Mobiles"
+          },
+          quantity: 1,
+          price: 139900
+        }
+      ],
+      totalAmount: 139900
+    },
+    {
+      id: "OD2026102432",
+      date: "June 23, 2026",
+      status: "Shipped",
+      trackingStep: 2, // Shipped
+      paymentMethod: "Credit Card (HDFC Bank)",
+      address: {
+        name: user?.name || "Customer",
+        address: user?.address || "12, Anna Salai, Mount Road",
+        city: user?.city || "Chennai",
+        state: user?.state || "Tamil Nadu",
+        pincode: user?.pincode || "600001"
+      },
+      items: [
+        {
+          product: INDIAN_PRODUCTS[4] || {
+            name: "OnePlus Nord CE 4 Lite 5G (Super Blue)",
+            price: 19999,
+            images: ["https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&q=80"],
+            category: "Mobiles"
+          },
+          quantity: 1,
+          price: 19999
+        }
+      ],
+      totalAmount: 19999
+    },
+    {
+      id: "OD2026102219",
+      date: "June 25, 2026",
+      status: "Processing",
+      trackingStep: 1, // Packed/Processing
+      paymentMethod: "Cash on Delivery",
+      address: {
+        name: user?.name || "Customer",
+        address: user?.address || "12, Anna Salai, Mount Road",
+        city: user?.city || "Chennai",
+        state: user?.state || "Tamil Nadu",
+        pincode: user?.pincode || "600001"
+      },
+      items: [
+        {
+          product: INDIAN_PRODUCTS[8] || {
+            name: "boAt Stone 350 Bluetooth Speaker",
+            price: 1299,
+            images: ["https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=600&q=80"],
+            category: "Audio"
+          },
+          quantity: 2,
+          price: 1299
+        }
+      ],
+      totalAmount: 2598
+    }
+  ];
+
   const languages = ["हिंदी", "தமிழ்", "తెలుగు", "ಕನ್ನಡ", "ಕನ್ನಡ", "+8 more"];
 
   return (
@@ -412,6 +504,89 @@ export default function ProfileView() {
                   {l}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* ORDER HISTORY SECTION */}
+          <div className="space-y-2 text-left" id="profile-order-history-section">
+            <div className="flex items-center justify-between pl-1">
+              <p className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">Order History (Past Purchases)</p>
+              <span className="text-[9px] bg-blue-50 dark:bg-blue-950/40 text-[#2874F0] font-black uppercase px-2 py-0.5 rounded tracking-wider">
+                Simulated Past Purchases
+              </span>
+            </div>
+            
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-150 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800 overflow-hidden shadow-sm">
+              {mockPastOrders.map((order) => {
+                const getStatusStyle = (status: string) => {
+                  switch (status) {
+                    case 'Delivered':
+                      return { bg: 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30', dot: 'bg-emerald-500' };
+                    case 'Shipped':
+                      return { bg: 'bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-950/20 dark:text-sky-400 dark:border-sky-900/30', dot: 'bg-sky-500' };
+                    default:
+                      return { bg: 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30', dot: 'bg-amber-500' };
+                  }
+                };
+
+                const statusConfig = getStatusStyle(order.status);
+                
+                return (
+                  <div key={order.id} className="p-4 space-y-3.5 hover:bg-zinc-50/50 dark:hover:bg-zinc-850/20 transition-colors">
+                    {/* Top status info */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="leading-none text-left">
+                        <span className="text-[9px] text-zinc-400 font-bold uppercase">Order ID: <strong className="font-mono text-zinc-700 dark:text-zinc-300 font-black">{order.id}</strong></span>
+                        <p className="text-[10px] text-zinc-500 font-semibold mt-1 flex items-center gap-1">
+                          <Calendar className="h-3 w-3 text-zinc-400 shrink-0" />
+                          <span>Placed on {order.date}</span>
+                        </p>
+                      </div>
+                      <span className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${statusConfig.bg}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${statusConfig.dot} animate-pulse`} />
+                        {order.status}
+                      </span>
+                    </div>
+
+                    {/* Order items */}
+                    <div className="space-y-3">
+                      {order.items.map((item, idx) => (
+                        <div key={idx} className="flex gap-3 items-center">
+                          <img 
+                            src={item.product.images[0]} 
+                            alt={item.product.name} 
+                            referrerPolicy="no-referrer"
+                            className="h-11 w-11 object-cover rounded-xl border border-zinc-150 dark:border-zinc-800 bg-white dark:bg-zinc-950"
+                          />
+                          <div className="min-w-0 flex-1 leading-normal text-left">
+                            <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">{item.product.name}</h4>
+                            <p className="text-[9px] text-zinc-400 font-semibold mt-0.5">Qty: {item.quantity} | Category: {item.product.category}</p>
+                          </div>
+                          <div className="text-right leading-none shrink-0">
+                            <p className="text-xs font-black text-zinc-900 dark:text-white font-mono">₹{item.price.toLocaleString('en-IN')}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Actions bar */}
+                    <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800/80 pt-3">
+                      <div className="text-left">
+                        <p className="text-[8px] text-zinc-400 font-bold uppercase">Paid via {order.paymentMethod}</p>
+                        <p className="text-xs font-black text-[#2874F0] dark:text-[#5094ff] mt-0.5 font-mono">Total: ₹{order.totalAmount.toLocaleString('en-IN')}</p>
+                      </div>
+                      <button
+                        onClick={() => setTrackingOrder(order)}
+                        className="bg-blue-50 hover:bg-[#2874F0] hover:text-white text-[#2874F0] dark:bg-blue-950/30 dark:text-[#5094ff] dark:hover:bg-blue-600 dark:hover:text-white border border-blue-100 dark:border-blue-900/30 font-black text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Truck className="h-3.5 w-3.5 shrink-0" />
+                        Track Package
+                        <ArrowRight className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -1002,6 +1177,91 @@ export default function ProfileView() {
 
               </div>
 
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+ 
+      {/* 10. INTERACTIVE TRACKING TIMELINE MODAL */}
+      <AnimatePresence>
+        {trackingOrder && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setTrackingOrder(null)}
+              className="absolute inset-0 cursor-pointer"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 rounded-3xl p-6 w-full max-w-md shadow-2xl border border-zinc-100 dark:border-zinc-850 text-left z-10"
+            >
+              <button 
+                onClick={() => setTrackingOrder(null)}
+                className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1.5 rounded-full cursor-pointer bg-zinc-100 dark:bg-zinc-900"
+              >
+                <X className="h-4 w-4" />
+              </button>
+ 
+              <h3 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-tight mb-1">Track Delivery Status</h3>
+              <p className="text-[11px] text-zinc-400 mb-6 leading-tight">
+                Real-time express logistics timeline for Order ID: <span className="font-mono font-black text-zinc-700 dark:text-zinc-300">{trackingOrder.id}</span>
+              </p>
+ 
+              {/* Vertical Timeline */}
+              <div className="relative pl-8 space-y-6">
+                {/* Progress bar line */}
+                <div className="absolute left-3.5 top-2 bottom-2 w-0.5 bg-zinc-100 dark:bg-zinc-800">
+                  <div 
+                    className="absolute top-0 bottom-0 left-0 right-0 bg-zinc-100 dark:bg-zinc-800"
+                  />
+                  <div 
+                    className="absolute top-0 left-0 right-0 bg-blue-600 transition-all duration-500 rounded-full"
+                    style={{ height: `${(trackingOrder.trackingStep / 4) * 100}%` }}
+                  />
+                </div>
+ 
+                {[
+                  { label: "Ordered", desc: "Order confirmed by seller", icon: <Clock className="h-4 w-4" /> },
+                  { label: "Packed", desc: "Packed & ready at regional hub", icon: <Package className="h-4 w-4" /> },
+                  { label: "Shipped", desc: "In transit via SmartBuy Express", icon: <Truck className="h-4 w-4" /> },
+                  { label: "Out for Delivery", desc: "Courier partner is delivering today", icon: <Truck className="h-4 w-4" /> },
+                  { label: "Delivered", desc: "Handed over to resident", icon: <CheckCircle2 className="h-4 w-4" /> }
+                ].map((step, idx) => {
+                  const isCompleted = trackingOrder.trackingStep >= idx;
+                  const isActive = trackingOrder.trackingStep === idx;
+                  
+                  return (
+                    <div key={idx} className="relative flex items-start gap-4">
+                      {/* Timeline dot */}
+                      <div className={`absolute -left-8 z-10 flex h-7.5 w-7.5 items-center justify-center rounded-full border-2 transition-colors duration-350 ${
+                        isCompleted 
+                          ? 'bg-[#2874F0] border-[#2874F0] text-white' 
+                          : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-400 dark:text-zinc-600'
+                      }`}>
+                        {isCompleted ? <CheckCircle2 className="h-4.5 w-4.5" /> : step.icon}
+                      </div>
+ 
+                      {/* Content */}
+                      <div className="space-y-0.5 text-left">
+                        <h4 className={`text-xs font-black uppercase tracking-tight ${isCompleted ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'} ${isActive ? 'text-[#2874F0]' : ''}`}>
+                          {step.label}
+                          {isActive && <span className="ml-2 text-[9px] font-black uppercase text-[#FF9900] bg-orange-50 dark:bg-orange-950/20 px-1.5 py-0.5 rounded border border-orange-100 dark:border-orange-900/30">Active</span>}
+                        </h4>
+                        <p className={`text-[11px] ${isCompleted ? 'text-zinc-500 dark:text-zinc-400 font-medium' : 'text-zinc-400'}`}>{step.desc}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+ 
+              <div className="mt-8 border-t border-zinc-100 dark:border-zinc-850 pt-4 flex justify-between text-xs font-semibold text-zinc-500">
+                <p>Courier: <span className="font-bold text-zinc-800 dark:text-zinc-200">SmartBuy Express</span></p>
+                <p>Estimated Delivery: <span className="font-bold text-blue-600">Tomorrow EOD</span></p>
+              </div>
             </motion.div>
           </div>
         )}
