@@ -1,0 +1,6 @@
+{
+  "name": "SmartBuy India",
+  "description": "A modern, highly polished full-stack e-commerce platform with Amazon and Flipkart inspired glassmorphism UI, comprehensive user and admin features, interactive mini-games, and a unified Node.js/Express server.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
