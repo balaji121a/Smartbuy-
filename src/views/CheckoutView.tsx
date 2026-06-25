@@ -24,10 +24,10 @@ export default function CheckoutView() {
   const [addressForm, setAddressForm] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
-    pincode: user?.pincode || '600001',
+    pincode: user?.pincode || '',
     address: user?.address || '',
-    city: user?.city || 'Chennai',
-    state: user?.state || 'Tamil Nadu'
+    city: user?.city || '',
+    state: user?.state || ''
   });
 
   // Payment Options State

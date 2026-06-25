@@ -84,7 +84,7 @@ export default function ProfileView() {
         setSavedCards(JSON.parse(saved));
       } else {
         const defaultCards = [
-          { id: '1', number: '•••• •••• •••• 5678', name: user.name || 'Amit Kumar', expiry: '11/29', type: 'Visa' }
+          { id: '1', number: '•••• •••• •••• 5678', name: user.name || '', expiry: '11/29', type: 'Visa' }
         ];
         setSavedCards(defaultCards);
         localStorage.setItem(`sb_cards_${user.email}`, JSON.stringify(defaultCards));

@@ -138,19 +138,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         // ignore
       }
     }
-    return {
-      name: "Amit Kumar",
-      email: "amit@example.com",
-      phone: "9876543210",
-      pincode: "600001",
-      address: "12, Anna Salai, Mount Road",
-      city: "Chennai",
-      state: "Tamil Nadu",
-      superCoins: 240,
-      isMember: 'none',
-      role: 'user',
-      profileCompleted: true
-    };
+    return null;
   });
 
   // Token state
@@ -298,77 +286,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [orders, setOrders] = useState<Order[]>(() => {
     const saved = localStorage.getItem('ind_ecom_orders');
     if (saved) return JSON.parse(saved);
-
-    // Default 3 Seeded Past Orders
-    const defaultOrders: Order[] = [
-      {
-        id: "OD9283749817",
-        items: [
-          { product: INDIAN_PRODUCTS[0], quantity: 1, price: 139900 }
-        ],
-        totalAmount: 139900,
-        mrpTotal: 159900,
-        discount: 20000,
-        deliveryCharge: 0,
-        date: "2026-06-15",
-        status: "Delivered",
-        address: {
-          name: "Amit Kumar",
-          phone: "9876543210",
-          pincode: "600001",
-          address: "12, Anna Salai, Mount Road",
-          city: "Chennai",
-          state: "Tamil Nadu"
-        },
-        paymentMethod: "Credit Card",
-        trackingStep: 4 // Delivered
-      },
-      {
-        id: "OD8471928472",
-        items: [
-          { product: INDIAN_PRODUCTS[4], quantity: 2, price: 2199 }
-        ],
-        totalAmount: 4398,
-        mrpTotal: 8798,
-        discount: 4400,
-        deliveryCharge: 0,
-        date: "2026-06-20",
-        status: "Shipped",
-        address: {
-          name: "Amit Kumar",
-          phone: "9876543210",
-          pincode: "600001",
-          address: "12, Anna Salai, Mount Road",
-          city: "Chennai",
-          state: "Tamil Nadu"
-        },
-        paymentMethod: "UPI",
-        trackingStep: 2 // Shipped
-      },
-      {
-        id: "OD3748293049",
-        items: [
-          { product: INDIAN_PRODUCTS[8], quantity: 1, price: 425 }
-        ],
-        totalAmount: 465, // includes delivery
-        mrpTotal: 675,
-        discount: 250,
-        deliveryCharge: 40,
-        date: "2026-06-22",
-        status: "Processing",
-        address: {
-          name: "Amit Kumar",
-          phone: "9876543210",
-          pincode: "600001",
-          address: "12, Anna Salai, Mount Road",
-          city: "Chennai",
-          state: "Tamil Nadu"
-        },
-        paymentMethod: "Cash on Delivery",
-        trackingStep: 1 // Packed/Processing
-      }
-    ];
-    return defaultOrders;
+    return [];
   });
 
   useEffect(() => {
@@ -417,15 +335,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         userData.email.toLowerCase().includes('admin')
       );
 
+      const isPhone = userData.email && /^\d{10}$/.test(userData.email.trim());
+
       const newUser: AppUser = {
-        name: userData.name || "Amit Kumar",
-        email: userData.email || "amit@example.com",
-        phone: userData.phone || (isDemoUser ? "9876543210" : ""),
+        name: isDemoUser ? (userData.name || "Amit Kumar") : (userData.name || ""),
+        email: isPhone ? "" : (userData.email || ""),
+        phone: isPhone ? userData.email.trim() : (userData.phone || (isDemoUser ? "9876543210" : "")),
         pincode: userData.pincode || (isDemoUser ? "600001" : ""),
         address: userData.address || (isDemoUser ? "12, Anna Salai, Mount Road" : ""),
         city: userData.city || (isDemoUser ? "Chennai" : ""),
         state: userData.state || (isDemoUser ? "Tamil Nadu" : ""),
-        superCoins: userData.superCoins !== undefined ? userData.superCoins : 240,
+        superCoins: userData.superCoins !== undefined ? userData.superCoins : (isDemoUser ? 240 : 0),
         isMember: userData.isMember || 'none',
         role: userData.role || (userData.email && userData.email.toLowerCase().includes('admin') ? 'admin' : 'user'),
         profileCompleted: isDemoUser ? true : !!(userData.phone && userData.address && userData.pincode)
@@ -438,23 +358,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } else {
       // Quick/Fake Login: login(email, name)
       const email = first;
-      const name = second || "Amit Kumar";
+      const name = second || "";
       const isAdminEmail = email && email.toLowerCase().includes('admin');
       const isDemoUser = email && (
         email.toLowerCase().includes('customer') || 
         email.toLowerCase().includes('amit@example.com') || 
         email.toLowerCase().includes('admin')
       );
+      const isPhone = email && /^\d{10}$/.test(email.trim());
       
       const newUser: AppUser = {
-        name: name,
-        email: email || "amit@example.com",
-        phone: isDemoUser ? "9876543210" : "",
+        name: isDemoUser ? (name || "Amit Kumar") : name,
+        email: isPhone ? "" : (email || ""),
+        phone: isPhone ? email.trim() : (isDemoUser ? "9876543210" : ""),
         pincode: isDemoUser ? "600001" : "",
         address: isDemoUser ? "12, Anna Salai, Mount Road" : "",
         city: isDemoUser ? "Chennai" : "",
         state: isDemoUser ? "Tamil Nadu" : "",
-        superCoins: 240,
+        superCoins: isDemoUser ? 240 : 0,
         isMember: 'none',
         role: isAdminEmail ? 'admin' : 'user',
         profileCompleted: isDemoUser ? true : false

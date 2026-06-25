@@ -84,11 +84,18 @@ export default function LoginView() {
       return;
     }
 
-    const name = email.toLowerCase().includes('admin') ? "Shop Admin" : "Amit Kumar";
-    login(email, name);
-    toast.success(`Welcome back, ${name}! Verification complete ✓`);
+    const isDemoAdmin = email.toLowerCase().includes('admin');
+    const isDemoCustomer = email.toLowerCase() === 'customer@example.com' || email.toLowerCase() === 'amit@example.com';
+    const name = isDemoAdmin ? "Shop Admin" : isDemoCustomer ? "Amit Kumar" : "";
     
-    if (email.toLowerCase().includes('admin')) {
+    login(email, name);
+    if (name) {
+      toast.success(`Welcome back, ${name}! Verification complete ✓`);
+    } else {
+      toast.success("Verification complete! Please complete your profile ✓");
+    }
+    
+    if (isDemoAdmin) {
       navigate('admin');
     } else {
       navigate('home');
@@ -120,10 +127,17 @@ export default function LoginView() {
         }
       } else {
         // Fallback for sandboxed quick demo
-        const name = email.toLowerCase().includes('admin') ? "Shop Admin" : "Amit Kumar";
+        const isDemoAdmin = email.toLowerCase().includes('admin');
+        const isDemoCustomer = email.toLowerCase() === 'customer@example.com' || email.toLowerCase() === 'amit@example.com';
+        const name = isDemoAdmin ? "Shop Admin" : isDemoCustomer ? "Amit Kumar" : "";
+        
         login(email, name);
-        toast.success(`Welcome back, ${name}! Logged in as demo user ✓`);
-        if (email.toLowerCase().includes('admin')) {
+        if (name) {
+          toast.success(`Welcome back, ${name}! Logged in as demo user ✓`);
+        } else {
+          toast.success("Logged in successfully! Please complete your profile ✓");
+        }
+        if (isDemoAdmin) {
           navigate('admin');
         } else {
           navigate('home');
@@ -131,10 +145,17 @@ export default function LoginView() {
       }
     } catch (err) {
       // Offline fallback
-      const name = email.toLowerCase().includes('admin') ? "Shop Admin" : "Amit Kumar";
+      const isDemoAdmin = email.toLowerCase().includes('admin');
+      const isDemoCustomer = email.toLowerCase() === 'customer@example.com' || email.toLowerCase() === 'amit@example.com';
+      const name = isDemoAdmin ? "Shop Admin" : isDemoCustomer ? "Amit Kumar" : "";
+      
       login(email, name);
-      toast.success(`Welcome back, ${name}! (Sandboxed offline login) ✓`);
-      if (email.toLowerCase().includes('admin')) {
+      if (name) {
+        toast.success(`Welcome back, ${name}! ✓`);
+      } else {
+        toast.success("Logged in successfully! Please complete your profile ✓");
+      }
+      if (isDemoAdmin) {
         navigate('admin');
       } else {
         navigate('home');

@@ -236,11 +236,18 @@ export default function Navbar() {
       return;
     }
 
-    const name = loginName.trim() || (loginEmail.toLowerCase().includes('admin') ? "Shop Admin" : "Amit Kumar");
+    const isDemoAdmin = loginEmail.toLowerCase().includes('admin');
+    const isDemoCustomer = loginEmail.toLowerCase() === 'customer@example.com' || loginEmail.toLowerCase() === 'amit@example.com';
+    const name = loginName.trim() || (isDemoAdmin ? "Shop Admin" : isDemoCustomer ? "Amit Kumar" : "");
+    
     login(loginEmail, name);
     setShowLoginModal(false);
     resetLoginStates();
-    toast.success(`Welcome back, ${name}! Verification complete ✓`);
+    if (name) {
+      toast.success(`Welcome back, ${name}! Verification complete ✓`);
+    } else {
+      toast.success("Verification complete! Please complete your profile ✓");
+    }
   };
 
   const handlePasswordLoginSubmit = (e: React.FormEvent) => {
@@ -249,11 +256,18 @@ export default function Navbar() {
       toast.error("Please enter your password");
       return;
     }
-    const name = loginName.trim() || (loginEmail.toLowerCase().includes('admin') ? "Shop Admin" : "Amit Kumar");
+    const isDemoAdmin = loginEmail.toLowerCase().includes('admin');
+    const isDemoCustomer = loginEmail.toLowerCase() === 'customer@example.com' || loginEmail.toLowerCase() === 'amit@example.com';
+    const name = loginName.trim() || (isDemoAdmin ? "Shop Admin" : isDemoCustomer ? "Amit Kumar" : "");
+    
     login(loginEmail, name);
     setShowLoginModal(false);
     resetLoginStates();
-    toast.success(`Welcome back, ${name}! Password verified successfully ✓`);
+    if (name) {
+      toast.success(`Welcome back, ${name}! Password verified successfully ✓`);
+    } else {
+      toast.success("Logged in successfully! Please complete your profile ✓");
+    }
   };
 
   const handleOtpChange = (index: number, val: string) => {
