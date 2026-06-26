@@ -27,7 +27,9 @@ import {
   Mail,
   Lock,
   ShieldAlert,
-  CheckCircle
+  CheckCircle,
+  History,
+  Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
@@ -47,6 +49,14 @@ export default function Navbar() {
   const [searchVal, setSearchVal] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [searchHistory, setSearchHistory] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('gocart_search_history');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [userDropdown, setUserDropdown] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [tempPincode, setTempPincode] = useState('600001');
@@ -142,9 +152,38 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const addToHistory = (query: string) => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    setSearchHistory(prev => {
+      const filtered = prev.filter(item => item.toLowerCase() !== trimmed.toLowerCase());
+      const updated = [trimmed, ...filtered].slice(0, 5);
+      localStorage.setItem('gocart_search_history', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const removeFromHistory = (e: React.MouseEvent, query: string) => {
+    e.stopPropagation();
+    setSearchHistory(prev => {
+      const updated = prev.filter(item => item !== query);
+      localStorage.setItem('gocart_search_history', JSON.stringify(updated));
+      return updated;
+    });
+    toast.success(`Removed "${query}"`);
+  };
+
+  const clearAllHistory = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSearchHistory([]);
+    localStorage.removeItem('gocart_search_history');
+    toast.success("Cleared search history");
+  };
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchVal.trim()) {
+      addToHistory(searchVal.trim());
       setSearch(searchVal.trim());
       navigate('products');
       setShowSuggestions(false);
@@ -153,6 +192,7 @@ export default function Navbar() {
   };
 
   const selectSuggestion = (sug: string) => {
+    addToHistory(sug);
     setSearchVal(sug);
     setSearch(sug);
     navigate('products');
@@ -501,28 +541,74 @@ export default function Navbar() {
 
             {/* Suggestions Overlay */}
             <AnimatePresence>
-              {showSuggestions && suggestions.length > 0 && (
+              {showSuggestions && (suggestions.length > 0 || searchHistory.length > 0) && (
                 <motion.div
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 5 }}
-                  className="absolute left-0 right-0 top-full mt-1.5 bg-white text-zinc-800 rounded-2xl shadow-2xl border border-zinc-200 overflow-hidden z-50 text-xs"
+                  className="absolute left-0 right-0 top-full mt-1.5 bg-white text-zinc-800 rounded-2xl shadow-2xl border border-zinc-200 overflow-hidden z-50 text-xs text-left"
                 >
-                  <div className="p-2.5 bg-zinc-50 border-b border-zinc-100 text-[9px] font-black text-zinc-400 uppercase tracking-wider">
-                    {searchVal ? "Matching Products" : "Trending on SmartBuy India"}
-                  </div>
-                  <ul>
-                    {suggestions.map((sug, idx) => (
-                      <li 
-                        key={idx}
-                        onClick={() => selectSuggestion(sug)}
-                        className="px-4 py-2.5 hover:bg-zinc-100 cursor-pointer flex items-center gap-2 border-b border-zinc-50 last:border-b-0 font-semibold"
-                      >
-                        <Search className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
-                        <span className="truncate">{sug}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {/* Recent Searches Section */}
+                  {searchHistory.length > 0 && (
+                    <div className="border-b border-zinc-100 last:border-b-0">
+                      <div className="p-2.5 bg-zinc-50/80 border-b border-zinc-100 flex items-center justify-between px-4">
+                        <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <History className="h-3 w-3 text-zinc-400 shrink-0" />
+                          Recent Searches
+                        </span>
+                        <button
+                          type="button"
+                          onClick={clearAllHistory}
+                          className="text-[9px] font-black text-rose-500 hover:text-rose-700 uppercase tracking-wider bg-transparent border-0 cursor-pointer p-0"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                      <ul>
+                        {searchHistory.map((historyQuery, idx) => (
+                          <li
+                            key={`hist-${idx}`}
+                            onClick={() => selectSuggestion(historyQuery)}
+                            className="px-4 py-2.5 hover:bg-zinc-50 cursor-pointer flex items-center justify-between border-b border-zinc-50 last:border-b-0 font-semibold group transition-colors"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <History className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+                              <span className="truncate text-zinc-700">{historyQuery}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => removeFromHistory(e, historyQuery)}
+                              className="text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 p-1 rounded-lg transition-all cursor-pointer opacity-80 group-hover:opacity-100"
+                              title="Delete search"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Matching/Trending Products Section */}
+                  {suggestions.length > 0 && (
+                    <div>
+                      <div className="p-2.5 bg-zinc-50 border-b border-zinc-100 text-[9px] font-black text-zinc-400 uppercase tracking-wider px-4">
+                        {searchVal ? "Matching Products" : "Trending on SmartBuy India"}
+                      </div>
+                      <ul>
+                        {suggestions.map((sug, idx) => (
+                          <li 
+                            key={idx}
+                            onClick={() => selectSuggestion(sug)}
+                            className="px-4 py-2.5 hover:bg-zinc-50 cursor-pointer flex items-center gap-2 border-b border-zinc-50 last:border-b-0 font-semibold text-zinc-700 transition-colors"
+                          >
+                            <Search className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+                            <span className="truncate">{sug}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
