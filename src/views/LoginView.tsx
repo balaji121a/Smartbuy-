@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Mail, Lock, LogIn, ShieldAlert, Sparkles, Smartphone, CheckCircle } from 'lucide-react';
+import { Mail, Lock, LogIn, ShieldAlert, Sparkles, Smartphone, CheckCircle, User } from 'lucide-react';
 import { motion } from 'motion/react';
 import toast from 'react-hot-toast';
 
@@ -9,6 +9,7 @@ export default function LoginView() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [customName, setCustomName] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -37,6 +38,13 @@ export default function LoginView() {
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailOrPhone.trim());
     if (!isPhone && !isEmail) {
       toast.error("Please enter a valid 10-digit Mobile number or Email address");
+      return;
+    }
+
+    const isDemoAdmin = emailOrPhone.toLowerCase().includes('admin');
+    const isDemoCustomer = emailOrPhone.toLowerCase() === 'customer@example.com' || emailOrPhone.toLowerCase() === 'amit@example.com';
+    if (!isDemoAdmin && !isDemoCustomer && !customName.trim()) {
+      toast.error("Please enter your Full Name to proceed");
       return;
     }
 
@@ -86,7 +94,7 @@ export default function LoginView() {
 
     const isDemoAdmin = email.toLowerCase().includes('admin');
     const isDemoCustomer = email.toLowerCase() === 'customer@example.com' || email.toLowerCase() === 'amit@example.com';
-    const name = isDemoAdmin ? "Shop Admin" : isDemoCustomer ? "Amit Kumar" : "";
+    const name = isDemoAdmin ? "Shop Admin" : isDemoCustomer ? "Amit Kumar" : customName.trim();
     
     login(email, name);
     if (name) {
@@ -246,7 +254,7 @@ export default function LoginView() {
                   <button
                     type="button"
                     onClick={() => autofillAccount('user')}
-                    className="rounded-xl bg-white dark:bg-zinc-800 px-3 py-2 border border-zinc-200 dark:border-zinc-750 text-xs font-bold text-zinc-700 dark:text-zinc-300 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all flex items-center gap-1.5 justify-center animate-pulse"
+                    className="rounded-xl bg-white dark:bg-zinc-800 px-3 py-2 border border-zinc-200 dark:border-zinc-750 text-xs font-bold text-zinc-700 dark:text-zinc-300 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all flex items-center gap-1.5 justify-center"
                   >
                     <span>Amit Kumar (Customer)</span>
                   </button>
@@ -258,6 +266,9 @@ export default function LoginView() {
                     <span>Shop Admin (Admin)</span>
                   </button>
                 </div>
+                <p className="text-[9px] text-zinc-400 italic text-center">
+                  * To use your own details, simply enter your actual mobile number or email and name below!
+                </p>
               </div>
 
               <div className="space-y-4">
@@ -275,6 +286,27 @@ export default function LoginView() {
                     <Smartphone className="absolute left-4 top-3.5 h-4.5 w-4.5 text-zinc-400" />
                   </div>
                 </div>
+
+                {email.trim() !== '' && !email.toLowerCase().includes('admin') && email.toLowerCase() !== 'customer@example.com' && email.toLowerCase() !== 'amit@example.com' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="space-y-1.5"
+                  >
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Your Full Name</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Enter your name (e.g. Anbuselvan)"
+                        value={customName}
+                        onChange={(e) => setCustomName(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 dark:text-zinc-100 py-3 pl-11 pr-4 text-xs font-semibold outline-none focus:border-[#2874f0] focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/10 transition-all"
+                        required
+                      />
+                      <User className="absolute left-4 top-3.5 h-4.5 w-4.5 text-zinc-400" />
+                    </div>
+                  </motion.div>
+                )}
 
                 <p className="text-[10px] text-zinc-400 leading-relaxed">
                   By continuing, you agree to SmartBuy's <span className="text-[#2874f0] hover:underline cursor-pointer">Terms of Use</span> and <span className="text-[#2874f0] hover:underline cursor-pointer">Privacy Policy</span>.

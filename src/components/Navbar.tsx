@@ -232,6 +232,13 @@ export default function Navbar() {
       return;
     }
 
+    const isDemoAdmin = emailOrPhone.toLowerCase().includes('admin');
+    const isDemoCustomer = emailOrPhone.toLowerCase() === 'customer@example.com' || emailOrPhone.toLowerCase() === 'amit@example.com';
+    if (!isDemoAdmin && !isDemoCustomer && !loginName.trim()) {
+      toast.error("Please enter your Full Name to proceed");
+      return;
+    }
+
     const randomOtp = Math.floor(1000 + Math.random() * 9000).toString();
     setGeneratedOtp(randomOtp);
     setOtpTimer(30);
@@ -958,6 +965,24 @@ export default function Navbar() {
                           <Smartphone className="absolute left-3 top-3.5 h-4.5 w-4.5 text-zinc-400" />
                         </div>
                       </div>
+
+                      {!isSignUp && loginEmail.trim() !== '' && !loginEmail.toLowerCase().includes('admin') && loginEmail.toLowerCase() !== 'customer@example.com' && loginEmail.toLowerCase() !== 'amit@example.com' && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="space-y-1"
+                        >
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Full Name</label>
+                          <input 
+                            type="text" 
+                            placeholder="Enter your name (e.g. Anbuselvan)"
+                            value={loginName}
+                            onChange={(e) => setLoginName(e.target.value)}
+                            className="w-full border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white rounded-xl p-3 text-xs focus:border-[#2874f0] outline-none transition-all font-semibold"
+                            required
+                          />
+                        </motion.div>
+                      )}
 
                       <p className="text-[10px] text-zinc-400 leading-relaxed">
                         By continuing, you agree to Flipkart's <span className="text-[#2874f0] hover:underline cursor-pointer">Terms of Use</span> and <span className="text-[#2874f0] hover:underline cursor-pointer">Privacy Policy</span>.
