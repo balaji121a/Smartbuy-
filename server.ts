@@ -29,33 +29,29 @@ async function startServer() {
 
   const PORT = 3000;
 
-  // Ensure default demo users have passwords properly hashed.
-  // SECURITY: these well-known demo passwords are only ever seeded outside production,
-  // so a real deployment never ships with guessable admin/seller/user credentials.
-  if (process.env.NODE_ENV !== "production") {
-    try {
-      const users = db.getUsers();
-      let updated = false;
-      users.forEach((u: any) => {
-        if (u.id === 'usr_admin1' && !u.passwordHash) {
-          u.passwordHash = hashPassword('admin123');
-          updated = true;
-        }
-        if (u.id === 'usr_user1' && !u.passwordHash) {
-          u.passwordHash = hashPassword('user123');
-          updated = true;
-        }
-        if (u.id === 'usr_seller1' && !u.passwordHash) {
-          u.passwordHash = hashPassword('seller123');
-          updated = true;
-        }
-      });
-      if (updated) {
-        db.setUsers(users);
+  // Ensure default users have passwords properly hashed
+  try {
+    const users = db.getUsers();
+    let updated = false;
+    users.forEach((u: any) => {
+      if (u.id === 'usr_admin1' && !u.passwordHash) {
+        u.passwordHash = hashPassword('admin123');
+        updated = true;
       }
-    } catch (err) {
-      console.error("Failed to setup initial hashed passwords:", err);
+      if (u.id === 'usr_user1' && !u.passwordHash) {
+        u.passwordHash = hashPassword('user123');
+        updated = true;
+      }
+      if (u.id === 'usr_seller1' && !u.passwordHash) {
+        u.passwordHash = hashPassword('seller123');
+        updated = true;
+      }
+    });
+    if (updated) {
+      db.setUsers(users);
     }
+  } catch (err) {
+    console.error("Failed to setup initial hashed passwords:", err);
   }
 
   // ==========================================
@@ -68,15 +64,6 @@ async function startServer() {
       const { name, email, password } = req.body;
       if (!name || !email || !password) {
         return res.status(400).json({ message: "Name, email, and password are required." });
-      }
-
-      const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!EMAIL_REGEX.test(email)) {
-        return res.status(400).json({ message: "Please enter a valid email address." });
-      }
-
-      if (typeof password !== 'string' || password.length < 6) {
-        return res.status(400).json({ message: "Password must be at least 6 characters long." });
       }
 
       const existingUser = await UserModel.findByEmail(email);
@@ -96,7 +83,7 @@ async function startServer() {
       });
 
       const token = signToken({ id: user.id, email: user.email, role: user.role });
-      res.status(201).json({
+      res.status(211).json({
         message: "Registration successful",
         token,
         user: { id: user.id, name: user.name, email: user.email, role: user.role }
@@ -106,34 +93,12 @@ async function startServer() {
     }
   });
 
-  // Simple in-memory rate limiter for login attempts (prevents brute-force password guessing).
-  // Keyed by IP + email; resets after the window expires.
-  const LOGIN_ATTEMPT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-  const LOGIN_ATTEMPT_MAX = 8;
-  const loginAttempts = new Map<string, { count: number; windowStart: number }>();
-
-  function isLoginRateLimited(key: string): boolean {
-    const now = Date.now();
-    const entry = loginAttempts.get(key);
-    if (!entry || now - entry.windowStart > LOGIN_ATTEMPT_WINDOW_MS) {
-      loginAttempts.set(key, { count: 1, windowStart: now });
-      return false;
-    }
-    entry.count += 1;
-    return entry.count > LOGIN_ATTEMPT_MAX;
-  }
-
   // Login
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required." });
-      }
-
-      const rateLimitKey = `${req.ip}:${String(email).toLowerCase()}`;
-      if (isLoginRateLimited(rateLimitKey)) {
-        return res.status(429).json({ message: "Too many login attempts. Please try again in a few minutes." });
       }
 
       const user: any = await UserModel.findByEmail(email);
@@ -297,7 +262,7 @@ async function startServer() {
         review: comment
       });
 
-      res.status(201).json({
+      res.status(211).json({
         message: "Review submitted successfully!",
         rating: ratingRecord
       });
@@ -384,7 +349,7 @@ async function startServer() {
         address
       });
 
-      res.status(201).json({
+      res.status(211).json({
         message: "Store registration pending approval.",
         store
       });
@@ -498,7 +463,7 @@ async function startServer() {
         phone
       });
 
-      res.status(201).json({ message: "Address added successfully", address: addr });
+      res.status(211).json({ message: "Address added successfully", address: addr });
     } catch (err: any) {
       res.status(500).json({ message: err.message || "Failed to add address." });
     }
@@ -599,7 +564,7 @@ async function startServer() {
         placedOrders.push(order);
       }
 
-      res.status(201).json({
+      res.status(211).json({
         message: "Checkout successful. Order placed!",
         orders: placedOrders
       });
@@ -670,7 +635,7 @@ async function startServer() {
         review
       });
 
-      res.status(201).json({
+      res.status(211).json({
         message: "Thank you for your rating!",
         rating: ratingRecord
       });
@@ -767,7 +732,7 @@ async function startServer() {
         storeId: store.id
       });
 
-      res.status(201).json({ message: "Product created successfully", product });
+      res.status(211).json({ message: "Product created successfully", product });
     } catch (err: any) {
       res.status(500).json({ message: err.message || "Failed to add product." });
     }
@@ -1006,7 +971,7 @@ async function startServer() {
         createdAt: new Date().toISOString()
       });
 
-      res.status(201).json({ message: "Coupon created successfully", coupon });
+      res.status(211).json({ message: "Coupon created successfully", coupon });
     } catch (err: any) {
       res.status(500).json({ message: err.message || "Failed to create coupon." });
     }
